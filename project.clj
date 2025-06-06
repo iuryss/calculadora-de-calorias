@@ -7,7 +7,8 @@
                  [cheshire "5.8.1"]
                  [ring/ring-defaults "0.3.2"]
                  [ring/ring-json "0.4.0"]
-                 [clj-http "3.9.1"]]
+                 [clj-http "3.9.1"]
+                 [clojure.java-time "1.3.0"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler calculadorapi.handler/app}
   :profiles
