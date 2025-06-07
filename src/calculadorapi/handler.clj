@@ -33,7 +33,18 @@
 
 (defroutes app-routes
   (GET "/" [] "hello world")
+  (GET "/ganhos" [] (como-json {:registros (db/registros-do-tipo "ganho")}))
+  (GET "/perdas" [] (como-json {:registros (db/registros-do-tipo "perda")}))
+  (GET "/registros" [] (como-json {:registros (db/registros)}))
   (GET "/saldo" [] (como-json {:saldo (db/saldo)}))
+  (GET "/alimentos" [descricao] 
+      (if descricao
+        (como-json {:alimentos (db/pegar-alimentos descricao)})
+        (como-json {:mensagem "Descrição do alimento é necessária"} 400)))
+  (GET "/exercicios" [descricao]
+      (if descricao
+        (como-json {:exercicios (db/pegar-exercicios descricao)})
+        (como-json {:mensagem "Descrição do exercício é necessária"} 400)))
   (GET "/saldo-do-periodo" requisicao
   (let [body (:body requisicao)]
     (if (intervalo-valido? body)
@@ -58,9 +69,6 @@
           (-> (db/registrar-usuario (:body requisicao))
               (como-json 201))
           (como-json {:mensagem "Registro inválido"} 400))) 
-  (GET "/ganhos" [] (como-json {:registros (db/registros-do-tipo "ganho")}))
-  (GET "/perdas" [] (como-json {:registros (db/registros-do-tipo "perda")}))
-  (GET "/registros" [] (como-json {:registros (db/registros)}))
   (DELETE "/limpar" [] (do (db/limpar) (como-json {:mensagem ""} 204))))
   
 

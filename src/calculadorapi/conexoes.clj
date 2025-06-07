@@ -25,6 +25,15 @@
     )
 )
 
+(defn pegar-atividades [atividade]
+    (let [url (format BURNED_API_URL atividade)
+          body (client/get url {:headers {:X-Api-Key BURNED_API_KEY}})]
+        (if (= 200 (:status body))
+            (json/parse-string (:body body) true)
+            {:error "Erro ao acessar a API de queima de calorias"})      
+    )
+)
+
 (defn pegar-ganho-calorias [comida]
   (let [resposta (client/get (format CALORIES_API_URL comida))]
           (if (= 200 (:status resposta))

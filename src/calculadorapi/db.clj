@@ -61,16 +61,21 @@
 (defn registrar [registro]
   (let [colecao-nova (swap! banco conj registro)]
     (merge registro {:id (count colecao-nova)})))
+
+(defn pegar-exercicios [descricao]
+  (let [resposta (conexoes/pegar-atividades descricao)]
+    (if (:error resposta)
+      {:error "Erro ao pegar exercícios"}
+      resposta)))
   
-(defn registrar-perda [registro]
+(defn registrar-perda [registro index]
   (let [usuario (:peso (first @usuarios)) 
         resposta (conexoes/pegar-gasto-calorias (:descricao registro) usuario (:quantidade registro))
-        calorias (first resposta) ;;ajustar para pegar a melhor opção ao usuario
+        calorias (nth resposta index) 
         valor (/ (* (:quantidade registro) (:calories_per_hour calorias)) 60)]
     (if (:error resposta)
       {:error "Erro ao registrar perda"}
       (registrar (merge registro {:valor valor})))))
-
 
 (defn extrair-valor[s]
   (when-let [match (re-find #"\((\d+)" s)]
@@ -80,21 +85,30 @@
   (let [partes (str/split s #" ")]
     (Integer/parseInt (first partes))))
 
-(defn registrar-ganho [registro]
+(defn pegar-alimentos [descricao]
+  (let [resposta (conexoes/pegar-ganho-calorias descricao)]
+    (if (:error resposta)
+      {:error "Erro ao pegar alimentos"}
+      resposta)))
+
+(defn registrar-ganho [registro index]
     (let [resposta (conexoes/pegar-ganho-calorias (:descricao registro))
-        item (first resposta)
-        calorias (extrair-calorias (:calorias item))
-        peso (extrair-valor (:quantidade item))
-        valor (/ (* calorias (:quantidade registro)) peso)];; ajustar para pegar a melhor opção ao usuario
+          item (nth resposta index)
+          calorias (extrair-calorias (:calorias item))
+          peso (extrair-valor (:quantidade item))
+          valor (/ (* calorias (:quantidade registro)) peso)]
     (if (:error resposta)
       {:error "Erro ao registrar ganho"}
       (registrar (merge registro {:valor valor})))))
 
 (defn novo-registro [registro]
-  (let [tipo-registro (:tipo registro)]
+  (let [tipo-registro (:tipo registro)
+        index (:index registro)]
     (if (= tipo-registro "perda")
-      (registrar-perda registro)
-      (registrar-ganho registro))))
+      (registrar-perda registro index)
+      (registrar-ganho registro index))))
+
+
 
 
 
