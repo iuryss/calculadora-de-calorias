@@ -5,9 +5,8 @@
 (def BURNED_API_URL "https://api.api-ninjas.com/v1/caloriesburned?activity=%s")
 (def BURNED_API_KEY "YIgc/1iXCMsI/SmYbZ0VQw==X3HElntYRgfcow86")
 
-(def TRANSLATE_API_URL "https://google-api31.p.rapidapi.com/gtranslate")
-(def TRANSLATE_API_KEY "4af24503a6mshadf3b1d33832a9cp1118fdjsnfd8ac5bc0d1d")
-(def TRANSLATE_API_HOST "google-api31.p.rapidapi.com")
+(def TRANSLATE_API_URL "https://api-free.deepl.com/v2/translate")
+(def TRANSLATE_API_KEY "26682f17-5995-417f-9a78-761af414c83c:fx")
 
 (def CALORIES_API_URL "https://caloriasporalimentoapi.herokuapp.com/api/calorias/?descricao=%s")
 
@@ -43,15 +42,15 @@
       )
 )
 
-(defn traduzir [texto origem destino]
-  (let [resposta (client/post TRANSLATE_API_URL
-                              {:headers {"x-rapidapi-key" TRANSLATE_API_KEY
-                                         "x-rapidapi-host" TRANSLATE_API_HOST}
-                               :content-type :json
-                               :form-params {:text texto
-                                             :to destino
-                                             :from_lang origem}})]
-    (if (= 200 (:status resposta))
-      (json/parse-string (:body resposta) true) 
-      {:error "Erro ao acessar a API de tradução"})))
-
+(defn traduzir [text origem destino]
+    (let [params (cond-> {:text [text]
+                          :target_lang destino}
+                   origem (assoc :source_lang origem))
+          resposta (client/post TRANSLATE_API_URL
+                                {:headers {"Authorization" (str "DeepL-Auth-Key " TRANSLATE_API_KEY)
+                                           "Content-Type" "application/json"}
+                                 :body (json/generate-string params)
+                                 :as :json})]
+      (if (= 200 (:status resposta))
+        (:body resposta) 
+        {:error (str "Erro na tradução. Código HTTP: " (:status resposta))})))

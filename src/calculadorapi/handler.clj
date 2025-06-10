@@ -24,7 +24,9 @@
 (defn registro-usuario-valido? [registro]
   (and (contains? registro :nome)
        (contains? registro :peso)
-       (contains? registro :altura)))
+       (contains? registro :altura)
+       (contains? registro :sexo)
+       (contains? registro :idade)))
 
 (defn intervalo-valido? [registro]
   (and (contains? registro :dataInicio) 
@@ -57,7 +59,7 @@
     (if (intervalo-valido? body)
       (let [inicio (:dataInicio body)
             fim (:dataFim body)]
-        (como-json {:registros (db/registros-do-periodo inicio fim)}))
+        (como-json {:saldo (db/registros-do-periodo inicio fim)}))
       (como-json {:mensagem "Data inválida. Use o formato dd/MM/yyyy."} 400))))
   (POST "/registrar" requisicao 
         (if (registro-valido? (:body requisicao))

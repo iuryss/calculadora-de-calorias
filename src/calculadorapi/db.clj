@@ -2,24 +2,35 @@
     (:require
         [clojure.string :as str]
         [calculadorapi.conexoes :as conexoes]
-        [java-time :as time]))
+        [java-time :as time]
+        [cheshire.core :as json]))
 
-;; (defn traduzir [texto]
-;;   (let [traducao (conexoes/traduzir texto "pt" "en")]
-;;     (if (:error traducao)
-;;       {:error "Erro ao traduzir"}
-;;       (:traducao traducao))))
+(defn traduzir-pt-to-en [texto]
+  (let [traducao (conexoes/traduzir texto "pt" "en")
+        texto (first (:translations traducao))] 
+    (if (:error traducao)
+      {:error "Erro ao traduzir"}
+      (:text texto))))
+
+(defn traduzir-en-to-pt [texto]
+  (let [traducao (conexoes/traduzir texto "en" "pt")
+        texto (first (:translations traducao))]
+    (if (:error traducao)
+      {:error "Erro ao traduzir"}
+      (:text texto))))
 
 (def banco (atom []))
 
 (def usuarios (atom []))
 
 (defn registrar-usuario [registro]
-  (let [colecao-nova (swap! usuarios conj registro)]
-    (merge registro {:id (count colecao-nova)})))
+  (let [peso-novo (* 2.2 (:peso registro))
+        registro-atualizado (assoc registro :peso peso-novo)
+        colecao-nova (swap! usuarios conj registro-atualizado)]
+    (merge registro-atualizado {:id (count colecao-nova)})))
 
 (defn limpar []
-  (reset! banco []))
+  (reset! banco []))  
 
 (defn perda? [registro]
   (= (:tipo registro) "perda"))
@@ -62,15 +73,24 @@
   (let [colecao-nova (swap! banco conj registro)]
     (merge registro {:id (count colecao-nova)})))
 
+
+  
 (defn pegar-exercicios [descricao]
-  (let [resposta (conexoes/pegar-atividades descricao)]
+  (let [descricao (traduzir-pt-to-en descricao)
+        resposta (conexoes/pegar-atividades descricao)]
     (if (:error resposta)
       {:error "Erro ao pegar exercícios"}
-      resposta)))
+      (let [exercicios (take 5 resposta)
+            traduzidos (map (fn [x]
+                              (let [nome-traduzido (traduzir-en-to-pt (:name x))]
+                                (assoc x :name nome-traduzido)))
+                            exercicios)]
+        {:exercicios traduzidos}))))
   
 (defn registrar-perda [registro index]
-  (let [usuario (:peso (first @usuarios)) 
-        resposta (conexoes/pegar-gasto-calorias (:descricao registro) usuario (:quantidade registro))
+  (let [peso-usuario (:peso (first @usuarios)) 
+        exercicio (traduzir-pt-to-en (:descricao registro))
+        resposta (conexoes/pegar-gasto-calorias exercicio peso-usuario (:quantidade registro))
         calorias (nth resposta index) 
         valor (/ (* (:quantidade registro) (:calories_per_hour calorias)) 60)]
     (if (:error resposta)
@@ -89,7 +109,8 @@
   (let [resposta (conexoes/pegar-ganho-calorias descricao)]
     (if (:error resposta)
       {:error "Erro ao pegar alimentos"}
-      resposta)))
+      (let [alimentos (take 5 resposta)]
+        {:alimentos alimentos}))))
 
 (defn registrar-ganho [registro index]
     (let [resposta (conexoes/pegar-ganho-calorias (:descricao registro))
@@ -99,7 +120,9 @@
           valor (/ (* calorias (:quantidade registro)) peso)]
     (if (:error resposta)
       {:error "Erro ao registrar ganho"}
-      (registrar (merge registro {:valor valor})))))
+      (registrar (merge registro {:valor valor})))
+      
+      ))
 
 (defn novo-registro [registro]
   (let [tipo-registro (:tipo registro)
