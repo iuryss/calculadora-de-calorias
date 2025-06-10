@@ -12,6 +12,7 @@
   {:status (or status 200)
    :headers {"Content-Type" "application/json; charset=utf-8"}
    :body (json/generate-string conteudo)})
+  
 
 (defn registro-valido? [registro]
   (and (contains? registro :tipo)
@@ -47,20 +48,18 @@
       (if descricao
         (como-json {:exercicios (db/pegar-exercicios descricao)})
         (como-json {:mensagem "Descrição do exercício é necessária"} 400)))
-  (GET "/saldo-do-periodo" requisicao
-  (let [body (:body requisicao)]
-    (if (intervalo-valido? body)
-      (let [inicio (:dataInicio body)
-            fim (:dataFim body)]
-        (como-json {:saldo (db/saldo-do-periodo inicio fim)}))
-      (como-json {:mensagem "Data inválida. Use o formato dd/MM/yyyy."} 400))))
-  (GET "/registro-do-periodo" requisicao
-    (let [body (:body requisicao)]
-    (if (intervalo-valido? body)
-      (let [inicio (:dataInicio body)
-            fim (:dataFim body)]
-        (como-json {:saldo (db/registros-do-periodo inicio fim)}))
-      (como-json {:mensagem "Data inválida. Use o formato dd/MM/yyyy."} 400))))
+  (GET "/saldo-do-periodo" [inicio fim]
+    (let [inicio (str inicio)
+          fim (str fim)]
+      (if (and inicio fim)
+        (como-json {:saldo (db/saldo-do-periodo inicio fim)})
+        (como-json {:mensagem "Data inválida. Use o formato dd/MM/yyyy."} 400))))
+  (GET "/registro-do-periodo" [inicio fim]
+    (let [inicio (str inicio)
+          fim (str fim)]
+      (if (and inicio fim)
+        (como-json {:registros (db/registros-do-periodo inicio fim)})
+        (como-json {:mensagem "Data inválida. Use o formato dd/MM/yyyy."} 400))))
   (POST "/registrar" requisicao 
         (if (registro-valido? (:body requisicao))
           (-> (db/novo-registro (:body requisicao))
